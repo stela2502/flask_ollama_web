@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ollama Chat</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 2rem;
+        }
+
+        .message {
+            margin: 0.5rem 0;
+            padding: 1rem;
+            border-radius: 10px;
+            max-width: 75%;
+        }
+
+        .user {
+            align-self: flex-end;
+            background-color: #d1e7dd;
+        }
+
+        .assistant {
+            align-self: flex-start;
+            background-color: #e2e3e5;
+        }
+
+        form {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem 0;
+        }
+
+        textarea {
+            flex: 1;
+            resize: none;
+            padding: 0.5rem;
+            font-size: 1rem;
+            overflow: hidden; /* hide scrollbar */
+            min-height: 2.5rem;
+            max-height: 150px; /* max grow height */
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+        }
+
+        h1 {
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chat with Ollama (LLaMA 3)</h1>
+        <div class="chat-box">
+            {% for entry in chat_history %}
+                <div class="message {{ entry.role }}">
+                    <strong>{{ entry.role.capitalize() }}:</strong><br>
+                    {{ entry.content | safe }}
+                </div>
+            {% endfor %}
+        </div>
+        <form method="POST" id="chat-form">
+            <textarea name="prompt" id="prompt" rows="2" required placeholder="Type your message..."></textarea>
+            <button type="submit">Send</button>
+        </form>
+    </div>
+
+    <script>
+        const textarea = document.getElementById('prompt');
+
+        function autoResize() {
+            textarea.style.height = 'auto';       // Reset height
+            textarea.style.height = textarea.scrollHeight + 'px';  // Set height to scroll height
+        }
+
+        textarea.addEventListener('input', autoResize);
+
+        // Initialize size on page load in case of pre-filled text
+        window.addEventListener('load', autoResize);
+    </script>
+</body>
+</html>
