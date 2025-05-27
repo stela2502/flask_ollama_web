@@ -3,6 +3,8 @@ import markdown
 from flask import Flask, request, render_template, session, redirect, url_for
 import requests
 import re
+from flask import Blueprint
+
 
 app = Flask(__name__)
 app.secret_key = "your-secret-key"  # Required for session use
@@ -22,8 +24,8 @@ def index():
             "messages": session["chat_history"]
         })
         raw = result.json()["message"]["content"] 
-        raw_mod = raw
-        re.sub(r'(?m)^(```.*)$', r'\n\1\n', raw_mod)
+        #raw_mod = raw
+        #re.sub(r'(?m)^(```.*)$', r'\n\1\n', raw_mod)
 
         reply = markdown.markdown( raw_mod ) 
         session["chat_history"].append({"role": "assistant", "content": reply, "raw": raw, })
