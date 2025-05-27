@@ -27,7 +27,7 @@ def index():
         #raw_mod = raw
         #re.sub(r'(?m)^(```.*)$', r'\n\1\n', raw_mod)
 
-        reply = markdown.markdown( raw_mod ) 
+        reply = markdown.markdown( raw ) 
         session["chat_history"].append({"role": "assistant", "content": reply, "raw": raw, })
         session.modified = True
         return redirect(url_for("index"))
