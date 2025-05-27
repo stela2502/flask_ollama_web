@@ -1,0 +1,11 @@
+README.md
+setup.py
+flask_ollama_web/__init__.py
+flask_ollama_web/ollama_client.py
+flask_ollama_web/routes.py
+flask_ollama_web.egg-info/PKG-INFO
+flask_ollama_web.egg-info/SOURCES.txt
+flask_ollama_web.egg-info/dependency_links.txt
+flask_ollama_web.egg-info/requires.txt
+flask_ollama_web.egg-info/top_level.txt
+tests/test_routes.py
