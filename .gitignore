@@ -1,0 +1,3 @@
+build/
+/__pycache__/
+flask_ollama_web.egg-info/
