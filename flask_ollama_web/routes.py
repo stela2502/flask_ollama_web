@@ -158,13 +158,17 @@ def new_chat():
 
 @app.route('/export_markdown', methods=['GET'])
 def export_markdown():
-    chat_history = session.get("chat_history", [])
+    if "username" not in session:
+        return redirect(url_for("login"))
+    username = get_user_id(session["username"])
+ 
+    chat_history = get_chat_history(username)
     
     # Convert chat history to markdown string
     md_lines = []
     for message in chat_history:
         role = message.get("role", "unknown")
-        content = message.get("raw") or message.get("content") or ""
+        content = message.get("content") or ""
         if role == "user":
             md_lines.append(f"### User:\n{content}\n")
         elif role == "assistant":
