@@ -45,3 +45,31 @@ def index():
 def new_chat():
     session["chat_history"] = []  # Clear stored chat
     return redirect(url_for('index'))
+
+
+@app.route('/export_markdown', methods=['GET'])
+def export_markdown():
+    chat_history = session.get("chat_history", [])
+    
+    # Convert chat history to markdown string
+    md_lines = []
+    for message in chat_history:
+        role = message.get("role", "unknown")
+        content = message.get("raw") or message.get("content") or ""
+        if role == "user":
+            md_lines.append(f"### User:\n{content}\n")
+        elif role == "assistant":
+            md_lines.append(f"### Assistant:\n{content}\n")
+        else:
+            md_lines.append(f"### {role.capitalize()}:\n{content}\n")
+    
+    md_text = "\n---\n".join(md_lines)
+
+    # Send as downloadable markdown file
+    return Response(
+        md_text,
+        mimetype="text/markdown",
+        headers={
+            "Content-Disposition": "attachment; filename=chat_export.md"
+        }
+    )

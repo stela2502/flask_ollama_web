@@ -82,6 +82,36 @@
             margin-bottom: 1rem;
         }
 
+        #sidebar {
+              position: fixed;       /* Fix to viewport */
+              top: 20px;          /* 20px from bottom */
+              left: 20px;            /* 20px from left */
+              width: 220px;
+              background: #2c3e50;
+              color: white;
+              padding: 20px;
+              box-sizing: border-box;
+              border-radius: 8px;
+              box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+              display: flex;
+              flex-direction: column;
+              gap: 15px;
+              z-index: 1000;         /* Make sure it’s above other content */
+          } 
+
+          #sidebar button {
+            background: #3498db;
+            border: none;
+            color: white;
+            padding: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background 0.3s ease;
+          }
+          #sidebar button:hover {
+            background: #2980b9;
+          }
     </style>
     <script>
 
@@ -146,8 +176,15 @@
     </script>
 </head>
 <body>
+    <div id="sidebar" style="width: 200px; float: left; padding: 10px; border-right: 1px solid #ccc;">
+      <button onclick="window.location.href='/new_chat'">New Chat</button><br><br>
+      <button onclick="window.location.href='/export_markdown'">Export Markdown</button>
+    </div>
+
+    <div id="main-content" style="margin-left: 220px; padding: 10px;">
+      <!-- Your chat UI here -->
+    </div>
     <div class="container">
-        <button onclick="window.location.href='/new_chat'" class="new-chat-btn">New Chat</button>
         <h1>Chat with Ollama (LLaMA 3)</h1>
 
         <div class="chat-box">
