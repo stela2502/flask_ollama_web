@@ -1,0 +1,19 @@
+[project]
+name = "flask_ollama_web"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Stefan Lang",email = "Stefan.Lang@med.lu.se"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "flask (>=3.1.1,<4.0.0)",
+    "requests (>=2.32.3,<3.0.0)",
+    "markdown (>=3.8,<4.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

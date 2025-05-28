@@ -1,7 +1,7 @@
 import markdown
 from flask import Flask, request, render_template, session, redirect, url_for
+import requests
 import re
-import httpx  # async http client
 
 app = Flask(__name__)
 app.secret_key = "your-secret-key"  # Required for session use
@@ -16,20 +16,19 @@ async def index():
         session["chat_history"].append({"role": "user", "content": prompt})
 
         try:
-            async with httpx.AsyncClient() as client:
-                result = await client.post("http://localhost:11434/api/chat", json={
-                    "model": "llama3",
-                    "stream": False,
-                    "messages": session["chat_history"]
-                })
-            raw = result.json()["message"]["content"]
+            result = requests.post("http://localhost:11434/api/chat", json={
+                "model": "llama3",
+                "stream": False,
+                "messages": session["chat_history"]
+            })
+            raw = result.json()["message"]["content"] 
 
             reply = markdown.markdown(raw)
             session["chat_history"].append({"role": "assistant", "content": reply, "raw": raw})
             session.modified = True
             return redirect(url_for("index"))
 
-        except httpx.RequestError:
+        except requests.exceptions.RequestException:
             error_msg = "Could not connect to Ollama at http://localhost:11434. Is it running?"
             return render_template("index.html", error=error_msg, chat_history=session["chat_history"])
 
