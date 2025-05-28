@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import markdown
 
-DB_PATH = Path("/app/web/users.db")
+DB_PATH = Path("/app/ollama/web/users.db")
 
 def init_db():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)

@@ -1,4 +1,3 @@
-import markdown
 from flask import Flask, request, render_template, session, redirect, url_for
 import requests
 import re
