@@ -21,6 +21,13 @@ def index():
                 "stream": False,
                 "messages": session["chat_history"]
             })
+
+            if result.status_code != 200:
+                # Try to extract error message from Ollama
+                error_json = result.json()
+                error_msg = error_json.get("error", "Unknown error from Ollama")
+                return render_template("index.html", error=error_msg, chat_history=session["chat_history"])
+
             raw = result.json()["message"]["content"] 
 
             reply = markdown.markdown(raw)
