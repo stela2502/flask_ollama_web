@@ -177,6 +177,14 @@
 </head>
 <body>
     <div id="sidebar" style="width: 200px; float: left; padding: 10px; border-right: 1px solid #ccc;">
+        {% if session.username %}
+          <p>Welcome, {{ session.username }}! 
+            <a href="{{ url_for('change_password') }}">Change Password</a> | 
+            <a href="{{ url_for('logout') }}">Logout</a>
+          </p>
+        {% else %}
+          <p><a href="{{ url_for('login') }}">Login</a></p>
+        {% endif %}
       <button onclick="window.location.href='/new_chat'">New Chat</button><br><br>
       <button onclick="window.location.href='/export_markdown'">Export Markdown</button>
     </div>
