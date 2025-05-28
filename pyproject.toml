@@ -12,12 +12,12 @@ dependencies = [
     "requests (>=2.32.3,<3.0.0)",
     "markdown (>=3.8,<4.0)"
 ]
+include = [
+    "flask_ollama_web/templates/*.html"
+]
 
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poetry.include]
-# Include all html files in the package folder
-"flask_ollama_web/templates/*.html" = { format = "file" }
