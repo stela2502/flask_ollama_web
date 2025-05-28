@@ -7,7 +7,7 @@ app = Flask(__name__)
 app.secret_key = "your-secret-key"  # Required for session use
 
 @app.route("/", methods=["GET", "POST"])
-async def index():
+def index():
     if "chat_history" not in session:
         session["chat_history"] = []
 
