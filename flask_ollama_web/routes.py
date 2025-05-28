@@ -3,7 +3,7 @@ import requests
 import re
 from flask import Response
 import secrets
-
+import markdown
 import sqlite3
 
 from flask_ollama_web.userdb import DB_PATH, verify_user, hash_password, generate_salt, add_user, get_user_id, add_chat_message, get_chat_history
@@ -122,10 +122,8 @@ def index():
 
             raw = result.json()["message"]["content"] 
 
-            reply = markdown.markdown(raw)
-
             # Save assistant reply to DB
-            add_chat_message(username, "ai", reply)
+            add_chat_message(username, "ai", raw)
 
             updated_history = get_chat_history(username)
 
