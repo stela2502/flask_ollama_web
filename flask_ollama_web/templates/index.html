@@ -140,12 +140,16 @@
             });
           });
         });
+        window.onload = function () {
+            window.scrollTo(0, document.body.scrollHeight);
+        };
     </script>
 </head>
 <body>
     <div class="container">
         <button onclick="window.location.href='/new_chat'" class="new-chat-btn">New Chat</button>
         <h1>Chat with Ollama (LLaMA 3)</h1>
+
         <div class="chat-box">
             {% for entry in chat_history %}
                 <div class="message {{ entry.role }}" >
@@ -158,6 +162,9 @@
             {% endfor %}
         </div>
 
+        {% if error %}
+            <div style="color:red;">⚠️ {{ error }}</div>
+        {% endif %}
 
         <form method="POST" id="chat-form">
             <textarea name="prompt" id="prompt" rows="2" required placeholder="Type your message..."></textarea>
