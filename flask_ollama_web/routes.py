@@ -27,7 +27,6 @@ def index():
             session["chat_history"].append({"role": "assistant", "content": reply, "raw": raw})
             session.modified = True
             return redirect(url_for("index"))
-
         except requests.exceptions.RequestException:
             error_msg = "Could not connect to Ollama at http://localhost:11434. Is it running?"
             return render_template("index.html", error=error_msg, chat_history=session["chat_history"])
