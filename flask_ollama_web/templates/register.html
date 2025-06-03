@@ -3,7 +3,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </header>
 <body>
-<div class="container">
+<div class="login-container">
 <title>Create New Account</title>
 <h3>Create a New Account</h3>
 <form method="post" action="{{ url_for('register') }}">
@@ -19,3 +19,4 @@
 <p style="color:green">{{ message }}</p>
 {% endif %}
 </div>
+

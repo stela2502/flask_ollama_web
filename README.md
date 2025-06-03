@@ -5,6 +5,16 @@ This Python module spanns a web server up that interacts with a AI system runnin
 
 # Install
 
+You need a [local ollama installation](https://ollama.com/download/) and a 'running' ollama instance to connect to.
+
+Once you have installed ollama you can download and start whichever model ollama supports.
+E.g. start with a rather small model like llama3
+```
+ollama run llama3
+```
+
+With this you can install the flask ollama frontend like this:
+
 ```
 pip install git+https://github.com/stela2502/flask_ollama_web.git
 ```

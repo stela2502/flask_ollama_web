@@ -5,8 +5,11 @@ import os
 from pathlib import Path
 import markdown
 import requests
+from typing import Optional, Tuple
 
-DB_PATH = Path("/app/ollama/web/users.db")
+DB_PATH = Path(os.getenv("FLASK_OLLAMA_DB_PATH", "database")) / "users.db"
+
+#DB_PATH = Path("/app/ollama/web/users.db")
 
 def get_available_models() -> list[str]:
     try:
@@ -15,14 +18,14 @@ def get_available_models() -> list[str]:
         data = resp.json()
         return [m["name"] for m in data.get("models", [])]
     except Exception as e:
-        print(f"Error fetching models from Ollama: {e}")
+        print(f"Error fetchinglast_models from Ollama: {e}")
         return []
 
 def init_db():
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-
+    # Get the firstlast_model from availablelast_models
+    first_model = get_available_models()[0]
     # Create table if it doesn't exist
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
@@ -31,18 +34,50 @@ def init_db():
             password_hash TEXT NOT NULL,
             salt TEXT NOT NULL,
             role TEXT NOT NULL DEFAULT 'user',
+            last_model TEXT NOT NULL DEFAULT '{0}',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    '''.format(first_model) )
+
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS chats (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            role TEXT NOT NULL,
+            message TEXT NOT NULL,
+            last_model TEXT NOT NULL,  
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
         )
     ''')
 
-    # Add 'role' column if missing (for upgrades)
-    c.execute("PRAGMA table_info(users)")
-    columns = [row[1] for row in c.fetchall()]
-    if "role" not in columns:
-        c.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'")
-
     conn.commit()
     conn.close()
+
+def get_secret():
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    # Check if .env file exists
+    secret_f =  os.path.join(DB_PATH.parent, '.info')
+    if not os.path.exists( secret_f ):
+        # Generate a secure secret key
+        secret_key = secrets.token_hex(32)
+
+        # Create the .env file with necessary variables
+        with open( secret_f , 'w') as f:
+            f.write(f'{secret_key}')
+
+        print(f"Created new secret file with random secret key.")
+    # Ensure the file exists before reading
+    if not os.path.exists(secret_f):
+        raise FileNotFoundError(f"The secret file '{secret_f}' does not exist.")
+
+    try:
+        with open(secret_f, 'r') as f:
+            secret = f.read().strip()
+            return secret
+    except IOError:
+        print(f"Error reading the secret file: {secret_f}")
+        return None
 
 def hash_password(password: str, salt: str) -> str:
     return hashlib.pbkdf2_hmac(
@@ -52,15 +87,33 @@ def hash_password(password: str, salt: str) -> str:
         100_000
     ).hex()
 
+def username_not_taken(username):
+    """Check if the given username is available.
+
+    Args:
+        username (str): The username to check.
+
+    Returns:
+        bool: True if the username is available, False otherwise.
+    """
+    db = sqlite3.connect(DB_PATH)
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+        result = cursor.fetchone()
+        return not result  # Return False if result exists (username taken), True otherwise
+    finally:
+        db.close()
+
 def generate_salt() -> str:
     return secrets.token_hex(16)
 
-def add_user(username: str, password: str, role: str = "user") -> bool:
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
+def add_user(username: str, password: str, role: str = "user") -> bool:   
     salt = generate_salt()
     hashed = hash_password(password, salt)
     try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
         c.execute('''
             INSERT INTO users (username, password_hash, salt, role)
             VALUES (?, ?, ?, ?)
@@ -72,16 +125,28 @@ def add_user(username: str, password: str, role: str = "user") -> bool:
     finally:
         conn.close()
 
-def verify_user(username: str, password: str) -> bool:
+def verify_user(username: str, password: str) -> Optional[Tuple[str, str]]:
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute('SELECT password_hash, salt FROM users WHERE username = ?', (username,))
-    row = c.fetchone()
+
+    # Check if the username exists and verify password
+    c.execute("SELECT id, salt, last_model, password_hash  FROM users WHERE username = ?", (username,))
+    result = c.fetchone()
+
+    if not result:
+        conn.close()
+        return False
+
+    user_id, salt, last_model, password_hash = result
+    
+    hashed = hash_password(password, salt)
+
+    if password_hash != hashed :
+        conn.close()
+        return None
+
     conn.close()
-    if row:
-        expected_hash, salt = row
-        return hash_password(password, salt) == expected_hash
-    return False
+    return (user_id,last_model )
 
 def get_user_role(username: str) -> str | None:
     conn = sqlite3.connect(DB_PATH)
@@ -91,52 +156,53 @@ def get_user_role(username: str) -> str | None:
     conn.close()
     return row[0] if row else None
 
-def init_chats_table():
+def update_user_model(username: str, new_model: str):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
+
+    # Update both session and database
     c.execute('''
-        CREATE TABLE IF NOT EXISTS chats (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            role TEXT CHECK(role IN ('user', 'ai')) NOT NULL,
-            model TEXT NOT NULL,
-            message TEXT NOT NULL,
-            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-    ''')
+        UPDATE users
+        SET last_model = ?
+        WHERE username = ?
+    ''', (new_model, username))
+
     conn.commit()
     conn.close()
 
-def get_user_id(username: str) -> int | None:
+def get_user_id(username: str):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT id, model FROM users WHERE username = ?", (username,))
+    c.execute("SELECT id,last_model FROM users WHERE username = ?", (username,))
     row = c.fetchone()
     conn.close()
-    return row[0] if row else None
+    return (row[0], row[1]) if row else None
 
-def add_chat_message(username: str, role: str, message: str, model: str):
-    (user_id, model) = get_user_id(username)
-    if user_id is None:
+def add_chat_message(username: str, role: str, message: str,last_model: str):
+    data = get_user_id(username)
+    if data is None:
         raise ValueError("User not found")
+    user_id,last_model = data
+
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
-        INSERT INTO chats (user_id, role, message, model)
+        INSERT INTO chats (user_id, role, message,last_model)
         VALUES (?, ?, ?, ?)
-    ''', (user_id, role, message, model))
+    ''', (user_id, role, message,last_model))
     conn.commit()
     conn.close()
 
 def get_chat_history(username: str, limit: int = 100) -> list[dict]:
-    user_id = get_user_id(username)
-    if user_id is None:
+    data = get_user_id(username)
+    if data is None:
         return []
+    user_id,last_model = data
+
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
-        SELECT role, message, model, timestamp FROM chats
+        SELECT role, message,last_model, timestamp FROM chats
         WHERE user_id = ?
         ORDER BY timestamp ASC
         LIMIT ?
@@ -146,13 +212,11 @@ def get_chat_history(username: str, limit: int = 100) -> list[dict]:
 
     chat_history = []
 
-    for role, message, model, time in rows:
+    for role, message,last_model, time in rows:
         if role == "ai":
-            # For AI entries: parse markdown for "content" and keep raw original
             content = markdown.markdown(message)
-            chat_history.append({"role": "assistant", "content": content, "raw": message, "model": model})
+            chat_history.append({"role": "assistant", "content": content, "raw": message, "model":last_model})
         else:
-            # For user entries: just put content as message text
             chat_history.append({"role": role, "content": message})
 
     return chat_history

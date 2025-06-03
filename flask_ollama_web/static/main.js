@@ -46,3 +46,8 @@
 
 const chatBox = document.querySelector('.chat-box');
 chatBox.scrollTop = chatBox.scrollHeight;
+
+document.getElementById('model-select').addEventListener('change', function() {
+    const selectedModel = this.value;
+    document.getElementById('model-value').value = selectedModel;
+});
