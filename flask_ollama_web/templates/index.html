@@ -3,233 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <title>Ollama Chat</title>
-    <style>
-        body {
-            font-family: system-ui, sans-serif;
-            background: #f8f9fa;
-            margin: 0;
-            padding: 0;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 1rem;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        .chat-box {
-            flex: 1;
-            overflow-y: auto;
-            padding-bottom: 2rem;
-        }
-
-        .message {
-            margin: 0.5rem 0;
-            padding: 1rem;
-            border-radius: 10px;
-            max-width: 75%;
-        }
-
-        .user {
-            align-self: flex-end;
-            background-color: #d1e7dd;
-        }
-
-        .assistant {
-            align-self: flex-start;
-            background-color: #e2e3e5;
-        }
-        .new-chat-btn {
-            margin-bottom: 1rem;
-            padding: 0.5rem 1rem;
-            font-size: 1rem;
-            background-color: #0d6efd;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-
-        .new-chat-btn:hover {
-            background-color: #0b5ed7;
-        }
-
-        form {
-            display: flex;
-            gap: 0.5rem;
-            padding: 1rem 0;
-        }
-
-        textarea {
-            flex: 1;
-            resize: none;
-            padding: 0.5rem;
-            font-size: 1rem;
-            overflow: hidden; /* hide scrollbar */
-            min-height: 2.5rem;
-            max-height: 150px; /* max grow height */
-        }
-
-        button {
-            padding: 0.5rem 1rem;
-            font-size: 1rem;
-        }
-
-        h1 {
-            margin-bottom: 1rem;
-        }
-
-        #sidebar {
-              position: fixed;       /* Fix to viewport */
-              top: 20px;          /* 20px from bottom */
-              left: 20px;            /* 20px from left */
-              width: 220px;
-              background: #f8f9fa;
-              color: white;
-              padding: 20px;
-              box-sizing: border-box;
-              border-radius: 8px;
-              box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-              display: flex;
-              flex-direction: column;
-              gap: 15px;
-              z-index: 1000;         /* Make sure it’s above other content */
-          } 
-
-          #sidebar button {
-            background: #bebfc2;
-            border: none;
-            color: white;
-            padding: 12px;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 5px;
-            transition: background 0.3s ease;
-          }
-          #sidebar button:hover {
-            background: #757d74;
-          }
-    </style>
-    <script>
-
-        function fallbackCopyTextToClipboard(text) {
-          const textArea = document.createElement("textarea");
-          textArea.value = text;
-
-          // Avoid scrolling to bottom
-          textArea.style.position = "fixed";
-          textArea.style.top = 0;
-          textArea.style.left = 0;
-
-          document.body.appendChild(textArea);
-          textArea.focus();
-          textArea.select();
-
-          try {
-            const successful = document.execCommand('copy');
-            if (successful) {
-              return Promise.resolve();
-            } else {
-              return Promise.reject('Fallback: Copy command unsuccessful');
-            }
-          } catch (err) {
-            return Promise.reject('Fallback: Copy command failed: ' + err);
-          } finally {
-            document.body.removeChild(textArea);
-          }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-        document.querySelectorAll('.copy-raw-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-              const rawMarkdown = btn.getAttribute('data-raw');
-              if (!rawMarkdown) {
-                alert("No raw markdown data found!");
-                return;
-              }
-
-              if (navigator.clipboard) {
-                navigator.clipboard.writeText(rawMarkdown).then(() => {
-                  btn.textContent = "Copied!";
-                  setTimeout(() => btn.textContent = "Copy raw markdown", 1500);
-                }).catch(err => {
-                  alert("Failed to copy: " + err);
-                });
-              } else {
-                // Fallback for unsupported browsers
-                fallbackCopyTextToClipboard(rawMarkdown).then(() => {
-                  btn.textContent = "Copied!";
-                  setTimeout(() => btn.textContent = "Copy raw markdown", 1500);
-                }).catch(err => {
-                  alert(err);
-                });
-              }
-            });
-          });
-        });
-        window.onload = function () {
-            window.scrollTo(0, document.body.scrollHeight);
-        };
-    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <div id="sidebar" style="width: 200px; float: left; padding: 10px; border-right: 1px solid #ccc;">
-        {% if session.username %}
-          <p>Welcome, {{ session.username }}! 
-            <a href="{{ url_for('change_password') }}">Change Password</a> | 
-            <a href="{{ url_for('logout') }}">Logout</a>
-          </p>
-        {% else %}
-          <p><a href="{{ url_for('login') }}">Login</a></p>
-        {% endif %}
+  <div class="layout">
+    
+    <aside class="sidebar left">      
+      <!-- Left sidebar content -->
+      {% if session.username %}
+        <p>Welcome, {{ session.username }}! 
+          <a href="{{ url_for('change_password') }}">Change Password</a> | 
+          <a href="{{ url_for('logout') }}">Logout</a>
+        </p>
+      {% else %}
+        <p><a href="{{ url_for('login') }}">Login</a></p>
+      {% endif %}
       <button onclick="window.location.href='/new_chat'">New Chat</button><br><br>
       <button onclick="window.location.href='/export_markdown'">Export Markdown</button>
-    </div>
+    </aside>
+    
+    <main class="content">
+      <!-- Main chat/content goes here -->
+      <h1>Chat with Ollama (LLaMA 3)</h1>
 
-    <div id="main-content" style="margin-left: 220px; padding: 10px;">
-      <!-- Your chat UI here -->
-    </div>
+      <div class="chat-box">
+          {% for entry in chat_history %}
+              <div class="message {{ entry.role }}" >
+                  <strong>{{ entry.role.capitalize() }}:</strong><br>
+                  {{ entry.content | safe }}
+                  {% if entry.role == 'assistant' %}
+                    <button class="copy-raw-btn" data-raw="{{ entry.raw | e }}">Copy raw markdown</button>
+                  {% endif %}
+              </div>
+          {% endfor %}
+      </div>
+
+      {% if error %}
+          <div style="color:red;">⚠️ {{ error }}</div>
+      {% endif %}
+
+      <form method="POST" id="chat-form">
+          <textarea name="prompt" id="prompt" rows="2" required placeholder="Type your message..."></textarea>
+          <button type="submit">Send</button>
+      </form>
+
+    </main>
+    
+    <aside class="sidebar right">
+      <!-- Right sidebar content -->
+      <!-- empty for now -->
+    </aside>
+    
+  </div>
+
     <div class="container">
-        <h1>Chat with Ollama (LLaMA 3)</h1>
-
-        <div class="chat-box">
-            {% for entry in chat_history %}
-                <div class="message {{ entry.role }}" >
-                    <strong>{{ entry.role.capitalize() }}:</strong><br>
-                    {{ entry.content | safe }}
-                    {% if entry.role == 'assistant' %}
-                      <button class="copy-raw-btn" data-raw="{{ entry.raw | e }}">Copy raw markdown</button>
-                    {% endif %}
-                </div>
-            {% endfor %}
-        </div>
-
-        {% if error %}
-            <div style="color:red;">⚠️ {{ error }}</div>
-        {% endif %}
-
-        <form method="POST" id="chat-form">
-            <textarea name="prompt" id="prompt" rows="2" required placeholder="Type your message..."></textarea>
-            <button type="submit">Send</button>
-        </form>
+        
     </div>
 
-    <script>
-        const textarea = document.getElementById('prompt');
+    <script src="{{ url_for('static', filename='main.js') }}" defer></script>
 
-        function autoResize() {
-            textarea.style.height = 'auto';       // Reset height
-            textarea.style.height = textarea.scrollHeight + 'px';  // Set height to scroll height
-        }
-
-        textarea.addEventListener('input', autoResize);
-
-        // Initialize size on page load in case of pre-filled text
-        window.addEventListener('load', autoResize);
-    </script>
 </body>
 </html>
 

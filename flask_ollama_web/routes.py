@@ -6,7 +6,7 @@ import secrets
 import markdown
 import sqlite3
 
-from flask_ollama_web.userdb import DB_PATH, verify_user, hash_password, generate_salt, add_user, get_user_id, add_chat_message, get_chat_history
+from flask_ollama_web.userdb import DB_PATH, get_available_models, verify_user, hash_password, generate_salt, add_user, get_user_id, add_chat_message, get_chat_history
 
 from datetime import datetime, timedelta
 
@@ -26,8 +26,12 @@ def change_password():
         username = session["username"]
         old = request.form["old_password"]
         new = request.form["new_password"]
-
-        if verify_user(username, old):
+        confirm = request.form["confirm_password"] 
+        if new != confirm:
+            message = "New passwords do not match."
+        elif not verify_user(username, old):
+            message = "Old password incorrect."
+        else:
             conn = sqlite3.connect(DB_PATH)
             c = conn.cursor()
             salt = generate_salt()
@@ -37,12 +41,15 @@ def change_password():
             conn.commit()
             conn.close()
             message = "Password updated successfully."
-        else:
-            message = "Old password incorrect."
 
     return render_template("change_password.html", message=message)
 
-
+@app.route("/set_model", methods=["POST"])
+def set_model():
+    selected_model = request.form.get("model")
+    if selected_model in get_available_models():
+        session["model"] = selected_model
+    return redirect(url_for("chat_page"))  # or wherever
 
 @app.before_request
 def check_session_timeout():
@@ -66,6 +73,12 @@ def login():
         if verify_user(username, password):
             session["username"] = username
             session["last_seen"] = datetime.utcnow().isoformat()
+            if "model" not in session:
+                # Set default model into session
+                available_models = get_available_models()
+                if available_models:
+                    session["model"] = available_models[0]  # first model as default
+
             return redirect(url_for("index"))
         else:
             return render_template("login.html", error="Invalid credentials.")
@@ -76,7 +89,7 @@ def logout():
     session.clear()
     return redirect(url_for("login"))
 
-@app.route("/register", methods=["POST"])
+@app.route("/register", methods=["GET","POST"])
 def register():
     username = request.form["username"]
     password = request.form["password"]
@@ -94,6 +107,7 @@ def index():
         return redirect(url_for("login"))
 
     username = session["username"]
+    model = session["model"]
 
     if "chat_history" in session:
         session["chat_history"] = []
@@ -101,14 +115,14 @@ def index():
     if request.method == "POST":
         prompt = request.form["prompt"]
 
-        add_chat_message(username, "user", prompt)
+        add_chat_message(username, "user", prompt, "")
 
         try:
 
             updated_history = get_chat_history(username)
 
             result = requests.post("http://localhost:11434/api/chat", json={
-                "model": "llama3",
+                "model": model,
                 "stream": False,
                 "messages": updated_history
             })
@@ -123,7 +137,7 @@ def index():
             raw = result.json()["message"]["content"] 
 
             # Save assistant reply to DB
-            add_chat_message(username, "ai", raw)
+            add_chat_message(username, "ai", raw, model)
 
             updated_history = get_chat_history(username)
 

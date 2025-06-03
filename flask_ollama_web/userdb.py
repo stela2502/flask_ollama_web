@@ -4,8 +4,19 @@ import secrets
 import os
 from pathlib import Path
 import markdown
+import requests
 
 DB_PATH = Path("/app/ollama/web/users.db")
+
+def get_available_models() -> list[str]:
+    try:
+        resp = requests.get("http://localhost:11434/api/tags")
+        resp.raise_for_status()
+        data = resp.json()
+        return [m["name"] for m in data.get("models", [])]
+    except Exception as e:
+        print(f"Error fetching models from Ollama: {e}")
+        return []
 
 def init_db():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -89,6 +100,7 @@ def init_chats_table():
             user_id INTEGER NOT NULL,
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             role TEXT CHECK(role IN ('user', 'ai')) NOT NULL,
+            model TEXT NOT NULL,
             message TEXT NOT NULL,
             FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
         )
@@ -99,21 +111,21 @@ def init_chats_table():
 def get_user_id(username: str) -> int | None:
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT id FROM users WHERE username = ?", (username,))
+    c.execute("SELECT id, model FROM users WHERE username = ?", (username,))
     row = c.fetchone()
     conn.close()
     return row[0] if row else None
 
-def add_chat_message(username: str, role: str, message: str):
-    user_id = get_user_id(username)
+def add_chat_message(username: str, role: str, message: str, model: str):
+    (user_id, model) = get_user_id(username)
     if user_id is None:
         raise ValueError("User not found")
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
-        INSERT INTO chats (user_id, role, message)
-        VALUES (?, ?, ?)
-    ''', (user_id, role, message))
+        INSERT INTO chats (user_id, role, message, model)
+        VALUES (?, ?, ?, ?)
+    ''', (user_id, role, message, model))
     conn.commit()
     conn.close()
 
@@ -124,7 +136,7 @@ def get_chat_history(username: str, limit: int = 100) -> list[dict]:
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
-        SELECT role, message, timestamp FROM chats
+        SELECT role, message, model, timestamp FROM chats
         WHERE user_id = ?
         ORDER BY timestamp ASC
         LIMIT ?
@@ -134,11 +146,11 @@ def get_chat_history(username: str, limit: int = 100) -> list[dict]:
 
     chat_history = []
 
-    for role, message, time in rows:
+    for role, message, model, time in rows:
         if role == "ai":
             # For AI entries: parse markdown for "content" and keep raw original
             content = markdown.markdown(message)
-            chat_history.append({"role": "assistant", "content": content, "raw": message})
+            chat_history.append({"role": "assistant", "content": content, "raw": message, "model": model})
         else:
             # For user entries: just put content as message text
             chat_history.append({"role": role, "content": message})
