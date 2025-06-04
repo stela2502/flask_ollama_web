@@ -197,23 +197,8 @@ def new_chat():
 def export_markdown():
     if "username" not in session:
         return redirect(url_for("login"))
-
-    chat_history = get_chat_history(session['username'])
-
-    # Convert chat history to markdown string
-    md_lines = []
-    for message in chat_history:
-        role = message.get("role", "unknown")
-        content = message.get("raw") or message.get("content") or ""
-        model = message.get("model", "none")
-        if role == "user":
-            md_lines.append(f"### User:\n{content}\n")
-        elif role == "assistant":
-            md_lines.append(f"### Assistant ({model}):\n{content}\n")
-        else:
-            md_lines.append(f"### {role.capitalize()}:\n{content}\n")
     
-    md_text = "\n---\n".join(md_lines)
+    md_text = get_history_markdown( session['username'] )
 
     # Send as downloadable markdown file
     return Response(

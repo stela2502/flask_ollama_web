@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import markdown
 import requests
+import html2text;
 from typing import Optional, Tuple
 
 DB_PATH = Path(os.getenv("FLASK_OLLAMA_DB_PATH", "database")) / "users.db"
@@ -184,6 +185,12 @@ def add_chat_message(username: str, role: str, message: str,last_model: str):
         raise ValueError("User not found")
     user_id,last_model = data
 
+    helper = html2text.HTML2Text()
+    helper.body_width = 0
+    helper.bypass_tables = False
+    # make sure we do not get some bad html strings here.
+    # format the users input as markdown
+    message = helper.handle( message ) 
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
@@ -192,6 +199,34 @@ def add_chat_message(username: str, role: str, message: str,last_model: str):
     ''', (user_id, role, message,last_model))
     conn.commit()
     conn.close()
+
+def get_history_markdown(username: str ) -> list[dict]:
+    data = get_user_id(username)
+    if data is None:
+        return []
+    user_id,last_model = data
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''
+        SELECT role, message,last_model, timestamp FROM chats
+        WHERE user_id = ?
+        ORDER BY timestamp ASC
+    ''', (user_id, ))
+    rows = c.fetchall()
+    conn.close()
+
+    md_lines=[]
+
+    for role, content, model, time in rows:
+        if role == "user":
+            md_lines.append(f"### User #{time}:\n{content}\n")
+        elif role == "assistant":
+            md_lines.append(f"### Assistant ({model}) #{time}:\n{content}\n")
+        else:
+            md_lines.append(f"### {role.capitalize()}:\n{content}\n")
+
+    return "\n---\n".join(md_lines)
+
 
 def get_chat_history(username: str, limit: int = 100) -> list[dict]:
     data = get_user_id(username)
@@ -213,8 +248,8 @@ def get_chat_history(username: str, limit: int = 100) -> list[dict]:
     chat_history = []
 
     for role, message,last_model, time in rows:
+        content = markdown.markdown(message, extensions=['fenced_code'] )
         if role == "ai":
-            content = markdown.markdown(message, extensions=['fenced_code'] )
             chat_history.append({"role": "assistant", "content": content, "raw": message, "model":last_model})
         else:
             chat_history.append({"role": role, "content": message})
