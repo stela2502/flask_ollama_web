@@ -10,10 +10,11 @@ requires-python = ">=3.9"
 dependencies = [
     "flask (>=3.1.1,<4.0.0)",
     "requests (>=2.32.3,<3.0.0)",
-    "markdown (>=3.8,<4.0)"
+    "markdown (>=3.8,<4.0)",
 ]
 include = [
-    "flask_ollama_web/templates/*.html"
+    "flask_ollama_web/templates/*.html",
+    "flask_ollama_web/styles/*.css",
 ]
 
 [project.scripts]
@@ -22,4 +23,3 @@ flask_ollama_web = "flask_ollama_web.cli:main"
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
-

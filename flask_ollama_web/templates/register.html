@@ -4,15 +4,13 @@
 </header>
 <body>
 <div class="login-container">
-<title>Login</title>
-<h2>Login</h2>
-<form method="post" action="{{ url_for('login') }}">
+<title>Create New Account</title>
+<h3>Create a New Account</h3>
+<form method="post" action="{{ url_for('register') }}">
   <label>Username: <input name="username"></label><br>
   <label>Password: <input type="password" name="password"></label><br>
-  <input type="submit" value="Login">
+  <input type="submit" value="Register">
 </form>
-
-<hr>
 
 {% if error %}
 <p style="color:red">{{ error }}</p>
@@ -20,8 +18,5 @@
 {% if message %}
 <p style="color:green">{{ message }}</p>
 {% endif %}
-
-
-<p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
 </div>
-</body>
+
