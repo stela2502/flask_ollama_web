@@ -9,8 +9,9 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "flask (>=3.1.1,<4.0.0)",
+    "html2text>=2020.1.16",
+    "markdown-it-py>=3.0.0",
     "requests (>=2.32.3,<3.0.0)",
-    "markdown (>=3.8,<4.0)",
 ]
 include = [
     "flask_ollama_web/templates/*.html",

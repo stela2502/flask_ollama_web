@@ -3,10 +3,15 @@ import hashlib
 import secrets
 import os
 from pathlib import Path
-import markdown
 import requests
 import html2text;
 from typing import Optional, Tuple
+from markdown_it import MarkdownIt
+
+md_parser = MarkdownIt()
+html2md = html2text.HTML2Text()
+html2md.body_width = 0  # Don't wrap lines
+html2md.ignore_links = False
 
 DB_PATH = Path(os.getenv("FLASK_OLLAMA_DB_PATH", "database")) / "users.db"
 
@@ -185,12 +190,8 @@ def add_chat_message(username: str, role: str, message: str,last_model: str):
         raise ValueError("User not found")
     user_id,last_model = data
 
-    helper = html2text.HTML2Text()
-    helper.body_width = 0
-    helper.bypass_tables = False
-    # make sure we do not get some bad html strings here.
-    # format the users input as markdown
-    message = helper.handle( message ) 
+    message = html_to_markdown_with_js_blocks( message )
+
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
@@ -199,6 +200,15 @@ def add_chat_message(username: str, role: str, message: str,last_model: str):
     ''', (user_id, role, message,last_model))
     conn.commit()
     conn.close()
+
+def html_to_markdown_with_js_blocks(input_text):
+
+    # Step 1: Markdown → HTML
+    html = md_parser.render(input_text)
+
+    # Step 2: HTML → cleaned Markdown
+    cleaned_md = html2md.handle(html)
+    return cleaned_md.strip()
 
 def get_history_markdown(username: str ) -> list[dict]:
     data = get_user_id(username)
@@ -248,7 +258,7 @@ def get_chat_history(username: str, limit: int = 100) -> list[dict]:
     chat_history = []
 
     for role, message,last_model, time in rows:
-        content = markdown.markdown(message, extensions=['fenced_code'] )
+        content =md_parser.render(message)
         if role == "ai":
             chat_history.append({"role": "assistant", "content": content, "raw": message, "model":last_model})
         else:
