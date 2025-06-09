@@ -204,10 +204,10 @@ def add_chat_message(username: str, role: str, message: str,last_model: str):
 def html_to_markdown_with_js_blocks(input_text):
 
     # Step 1: Markdown → HTML
-    html = md_parser.render(input_text)
+    #html = md_parser.render(input_text)
 
     # Step 2: HTML → cleaned Markdown
-    cleaned_md = html2md.handle(html)
+    #cleaned_md = html2md.handle(html)
     return cleaned_md.strip()
 
 def get_history_markdown(username: str ) -> list[dict]:
@@ -230,10 +230,10 @@ def get_history_markdown(username: str ) -> list[dict]:
     for role, content, model, time in rows:
         if role == "user":
             md_lines.append(f"### User #{time}:\n{content}\n")
-        elif role == "ai":
+        elif role == "assistant":
             md_lines.append(f"### Assistant ({model}) #{time}:\n{content}\n")
         else:
-            md_lines.append(f"### {role.capitalize()}:\n{content}\n")
+            md_lines.append(f"### {role.capitalize()} #{time}:\n{content}\n")
 
     return "\n---\n".join(md_lines)
 
