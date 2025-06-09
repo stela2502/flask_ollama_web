@@ -230,7 +230,7 @@ def get_history_markdown(username: str ) -> list[dict]:
     for role, content, model, time in rows:
         if role == "user":
             md_lines.append(f"### User #{time}:\n{content}\n")
-        elif role == "assistant":
+        elif role == "ai":
             md_lines.append(f"### Assistant ({model}) #{time}:\n{content}\n")
         else:
             md_lines.append(f"### {role.capitalize()}:\n{content}\n")
