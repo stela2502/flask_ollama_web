@@ -210,6 +210,29 @@ def html_to_markdown_with_js_blocks(input_text):
     #cleaned_md = html2md.handle(html)
     return cleaned_md.strip()
 
+
+def delete_last_message(username):
+    data = get_user_id(username)
+    if data is None:
+        return []
+    user_id,last_model = data
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    # Delete the latest chat message for the given user_id
+    cursor.execute("""
+        DELETE FROM chats
+        WHERE id = (
+            SELECT id FROM chats
+            WHERE user_id = ?
+            ORDER BY timestamp DESC
+            LIMIT 1
+        )
+    """, (user_id,))
+
+    conn.commit()
+    conn.close()
+
 def get_history_markdown(username: str ) -> list[dict]:
     data = get_user_id(username)
     if data is None:

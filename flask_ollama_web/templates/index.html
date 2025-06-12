@@ -43,8 +43,8 @@
       {% endif %}
 
       <form method="POST" id="chat-form">
-          <textarea name="prompt" id="prompt" rows="2" required placeholder="Chat with {{session.last_model}}"></textarea>
-          <button type="submit">Send</button>
+        <textarea name="prompt" id="prompt" rows="2" required placeholder="Chat with {{ session.last_model }}">{{ prefill_prompt or '' }}</textarea>
+        <button type="submit">Send</button>
       </form>
 
       <div id="scroll_to"></div>
@@ -74,6 +74,23 @@
   </div>
 
     <script src="{{ url_for('static', filename='main.js') }}" defer></script>
+    
+    <script>
+      const textarea = document.getElementById('prompt');
+
+    function autoResize() {
+      this.style.height = 'auto';
+      this.style.height = this.scrollHeight + 'px';
+    }
+
+    textarea.addEventListener('input', autoResize);
+
+    // Optional: grow on page load if prefilled
+    window.addEventListener('load', function () {
+      autoResize.call(textarea);
+    });
+    </script>
+
 
 </body>
 </html>
