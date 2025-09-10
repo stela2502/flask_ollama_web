@@ -44,6 +44,6 @@ And then simply
 This will start a single flask server that you can connect to.
 And interact in a very simplye way:
 
-[A simple oolama web interface](path/to/SimpleInterface.png)]
+[A simple oolama web interface](./SimpleInterface.png)
 
 One big benefit from this is that you can see the answer in html and copy it in markdown ;-)
