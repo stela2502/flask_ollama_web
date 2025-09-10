@@ -171,7 +171,7 @@ def index():
             db_history = get_chat_history(username)
             return render_template("index.html", error=error_msg, chat_history=db_history, allowed_models= session["allowed_models"])
     
-    updated_history = get_chat_history(username)
+    history = get_chat_history(username)
 
     # If last message is from user and unanswered, remove it and pre-fill
     if history and history[-1]["role"] == "user":
