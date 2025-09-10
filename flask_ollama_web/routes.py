@@ -180,7 +180,7 @@ def index():
         prefill_prompt = last_prompt
         history = get_chat_history(username)
     
-    return render_template("index.html", chat_history=updated_history, allowed_models= session["allowed_models"] )
+    return render_template("index.html", chat_history=history, allowed_models= session["allowed_models"] )
 
 
 @app.route('/new_chat', methods=['GET'])
