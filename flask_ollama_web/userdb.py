@@ -208,7 +208,8 @@ def html_to_markdown_with_js_blocks(input_text):
 
     # Step 2: HTML → cleaned Markdown
     #cleaned_md = html2md.handle(html)
-    return cleaned_md.strip()
+    #return cleaned_md.strip()
+    return input_text
 
 
 def delete_last_message(username):
